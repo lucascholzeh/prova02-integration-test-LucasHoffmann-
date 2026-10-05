@@ -3,6 +3,12 @@ import { StatusCodes } from 'http-status-codes';
 import { faker } from '@faker-js/faker';
 import { SimpleReporter } from '../simple-reporter';
 
+/**
+ * Testes de integração da Restful API Dev (https://restful-api.dev).
+ * Fluxo CRUD encadeado: o objeto criado no primeiro teste tem o seu id
+ * guardado no stash do PactumJS ($S{objectId}) e é reutilizado nos demais.
+ * Os testes dependem da ordem de execução.
+ */
 describe('Restful API Dev', () => {
   const p = pactum;
   const rep = SimpleReporter;
@@ -15,6 +21,8 @@ describe('Restful API Dev', () => {
   afterAll(() => p.reporter.end());
 
   describe('OBJECTS', () => {
+    // POST /objects: cria um objeto, valida o corpo e o schema da resposta
+    // e guarda o "id" gerado com .stores() para os próximos testes.
     it('criar um novo objeto', async () => {
       await p
         .spec()
@@ -44,6 +52,8 @@ describe('Restful API Dev', () => {
         .stores('objectId', 'id');
     });
 
+    // GET /objects/{id}: busca o objeto criado e confirma que o id e o nome
+    // retornados são os mesmos enviados no POST.
     it('buscar o objeto criado pelo id', async () => {
       await p
         .spec()
@@ -54,6 +64,8 @@ describe('Restful API Dev', () => {
         .expectJsonLike({ name: nomeObjeto });
     });
 
+    // PUT /objects/{id}: substitui o objeto inteiro e valida que todos os
+    // campos (name e data) refletem os novos valores.
     it('atualizar o objeto por completo (PUT)', async () => {
       await p
         .spec()
@@ -75,6 +87,7 @@ describe('Restful API Dev', () => {
         });
     });
 
+    // PATCH /objects/{id}: altera somente o "name" e confirma a mudança.
     it('atualizar o objeto parcialmente (PATCH)', async () => {
       await p
         .spec()
@@ -88,6 +101,7 @@ describe('Restful API Dev', () => {
         });
     });
 
+    // DELETE /objects/{id}: remove o objeto e valida a mensagem de confirmação.
     it('deletar o objeto', async () => {
       await p
         .spec()
@@ -97,6 +111,8 @@ describe('Restful API Dev', () => {
         .expectBodyContains('has been deleted');
     });
 
+    // GET /objects/{id}: cenário negativo. Após o DELETE, o objeto não deve
+    // mais existir e a API deve responder 404.
     it('buscar o objeto deletado retorna 404', async () => {
       await p
         .spec()
